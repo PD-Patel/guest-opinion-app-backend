@@ -3,34 +3,38 @@ import EmailLog from "../models/email.model.js";
 import nodemailer from "nodemailer";
 import getSurveyModel from "../models/survey.model.js";
 import { v4 as uuidv4 } from "uuid";
+import { Resend } from "resend";
 import dotenv from "dotenv";
 dotenv.config();
 const router = express.Router();
 
 // Configure nodemailer transporter
-const transporter = nodemailer.createTransport({
-  service: "gmail", // Use your email provider
-  auth: {
-    user: process.env.EMAIL_USER, // Your email
-    pass: process.env.EMAIL_PASS, // Your email password or app password
-  },
-});
+// const transporter = nodemailer.createTransport({
+//   service: "gmail", // Use your email provider
+//   auth: {
+//     user: process.env.EMAIL_USER, // Your email
+//     pass: process.env.EMAIL_PASS, // Your email password or app password
+//   },
+// });
 
-// Send an email to the new recipients
-const sendEmails = async (emails) => {
-  for (const doc of emails) {
+const resend = new Resend("re_f8MZ1Ngg_EDWB6VjpFDfxah6YGwBcHnBk");
+
+const sentMails = async (ids) => {
+  for (const doc of ids) {
     const { email, token } = doc;
 
+    console.log("sending email  >>>>  ", email);
     const surveyLink = `${
       process.env.FRONTEND_URL
     }/survey?email=${encodeURIComponent(email)}&token=${encodeURIComponent(
       token
     )}`;
-    const mailOptions = {
-      from: "your-email@gmail.com",
-      to: email, // Send email individually
-      subject: "Hello from Our Service",
-      html: `
+    try {
+      resend.emails.send({
+        from: "onboarding@resend.dev",
+        to: email,
+        subject: "Hello from Our Service",
+        html: `
    <!DOCTYPE html>
 <html>
 <head>
@@ -134,16 +138,141 @@ const sendEmails = async (emails) => {
 </html>
 
 `,
-    };
-
-    try {
-      const info = await transporter.sendMail(mailOptions);
-      console.log(`Email sent to ${email}:`, info.response);
+      });
     } catch (error) {
       console.error(`Error sending email to ${email}:`, error.message);
     }
   }
 };
+
+// Send an email to the new recipients
+// const sendEmails = async (emails) => {
+//   for (const doc of emails) {
+//     const { email, token } = doc;
+
+//     const surveyLink = `${
+//       process.env.FRONTEND_URL
+//     }/survey?email=${encodeURIComponent(email)}&token=${encodeURIComponent(
+//       token
+//     )}`;
+//     const mailOptions = {
+//       from: "your-email@gmail.com",
+//       to: email, // Send email individually
+//       subject: "Hello from Our Service",
+//       html: `
+//    <!DOCTYPE html>
+// <html>
+// <head>
+//   <style>
+//     body {
+//       font-family: Arial, sans-serif;
+//       line-height: 1.6;
+//       margin: 0;
+//       padding: 0;
+//       background-color: #f4f4f4;
+//     }
+//     .email-container {
+//       max-width: 600px;
+//       margin: 20px auto;
+//       background: #ffffff;
+//       padding: 20px;
+//       border-radius: 10px;
+//       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+//     }
+//     .header {
+//       text-align: center;
+//       margin-bottom: 20px;
+//     }
+//     .header h1 {
+//       margin: 0;
+//       font-size: 24px;
+//       color: #333333;
+//     }
+
+//      .logo {
+//             text-align: center;
+//         }
+//         .logo img {
+//             max-width: 150px;
+//         }
+//     .content {
+//       text-align: center;
+//       margin-bottom: 20px;
+//     }
+//     .content p {
+//       font-size: 16px;
+//       color: #555555;
+//     }
+//     .buttons {
+//       text-align: center;
+//       margin-top: 20px;
+//     }
+//     .buttons a {
+//       display: inline-block;
+//       margin: 10px;
+//       padding: 12px 20px;
+//       text-decoration: none;
+//       font-size: 16px;
+//       color: #ffffff;
+//       border-radius: 5px;
+//       transition: background 0.3s;
+//     }
+//     .buttons .like {
+//       background: #28a745;
+//     }
+//     .buttons .like:hover {
+//       background: #218838;
+//     }
+//     .buttons .dislike {
+//       background: #dc3545;
+//     }
+//     .buttons .dislike:hover {
+//       background: #c82333;
+//     }
+//     .footer {
+//       text-align: center;
+//       margin-top: 20px;
+//       font-size: 12px;
+//       color: #999999;
+//     }
+//   </style>
+// </head>
+// <body>
+//   <div class="email-container">
+//    <div class="logo">
+//             <img src="https://ik.imagekit.io/jqrvmzk4i/daysInnLogo.png?updatedAt=1741404797040" alt="Motel Logo">
+//         </div>
+//     <div class="header">
+//       <h1>We Value Your Feedback!</h1>
+//     </div>
+//     <div class="content">
+//       <p>Thank you for your recent stay at Days Inn by Wyndham Oglesby / Starved Rock State Park where you checked out on recently.</p>
+//       <p>We would love to know your feedback. Did you enjoy your stay?</p>
+//     </div>
+//     <div class="buttons">
+//       <a href="https://g.page/r/CX47PKYT0wOOEAE/review" class="like">👍 Yes, I loved it!</a>
+//       <a href=${surveyLink} class="dislike">👎 I dislike it</a>
+//     </div>
+//     <div class="footer">
+//       <p>Thank you for helping us improve!</p>
+//      <p>Looking forward to welcoming you back soon.</p>
+
+//     </div>
+//   </div>
+// </body>
+// </html>
+
+// `,
+//     };
+
+//     try {
+//       const info = await transporter.sendMail(mailOptions);
+//       console.log(`Email sent to ${email}:`, info.response);
+//     } catch (error) {
+//       console.error(`Error sending email to ${email}:`, error.message);
+//     }
+//   }
+// };
 // Add a new email
 router.post("/add", async (req, res) => {
   const { emails } = req.body;
@@ -203,7 +332,7 @@ router.post("/add", async (req, res) => {
     const insertedDocs = await EmailLog.insertMany(newEmailDocs);
 
     // Send emails only to new ones
-    await sendEmails(newEmailDocs);
+    await sentMails(newEmailDocs);
 
     res.status(201).json({
       message: "Emails added and sent successfully.",
